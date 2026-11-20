@@ -3,7 +3,9 @@ from typing import Literal
 
 import joblib
 import pandas as pd
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 MODEL_PATH = Path(__file__).parent / "best_model.pkl"
@@ -16,6 +18,17 @@ app = FastAPI(
                 "using NISR EICV VUP microdata.",
     version="1.0.0",
 )
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request: Request, exc: RequestValidationError):
+    errors = [
+        {
+            "field": ".".join(str(part) for part in err["loc"][1:]) or "body",
+            "message": err["msg"],
+        }
+        for err in exc.errors()
+    ]
+    return JSONResponse(status_code=400, content={"detail": errors})
 
 class YouthProfile(BaseModel):
     model_config = {"extra": "forbid"}
