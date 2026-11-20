@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/constants/form_options.dart';
 
 class PredictionPage extends StatefulWidget {
   const PredictionPage({super.key});
@@ -11,15 +12,10 @@ class _PredictionPageState extends State<PredictionPage> {
   List<bool> _sexSelection = [true, false];
   List<bool> _areaSelection = [true, false];
   bool _attendedSchool = false;
-  String? _selectedProvince = 'City of Kigali';
 
-  final List<String> _provinces = [
-    'City of Kigali',
-    'Northern Province',
-    'Southern Province',
-    'Eastern Province',
-    'Western Province',
-  ];
+  String? _selectedProvince = 'City of Kigali';
+  String? _selectedPoverty = 'Non Poor';
+  String? _selectedQuintile = 'Mid';
 
   @override
   Widget build(BuildContext context) {
@@ -105,14 +101,13 @@ class _PredictionPageState extends State<PredictionPage> {
                   padding: const EdgeInsets.all(8.0),
                   child: DropdownButtonFormField<String>(
                     value: _selectedProvince,
-                    // Styles the outline to match your TextField
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(10)),
                       ),
                     ),
                     // Builds the list of items from the array
-                    items: _provinces.map((String province) {
+                    items: provinces.values.map((String province) {
                       return DropdownMenuItem<String>(
                         value: province,
                         child: Text(province),
@@ -138,7 +133,7 @@ class _PredictionPageState extends State<PredictionPage> {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: DropdownButtonFormField<String>(
-                    value: _selectedProvince,
+                    value: _selectedPoverty,
                     // Styles the outline to match your TextField
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(
@@ -146,7 +141,7 @@ class _PredictionPageState extends State<PredictionPage> {
                       ),
                     ),
                     // Builds the list of items from the array
-                    items: _provinces.map((String province) {
+                    items: povertyOptions.values.map((String province) {
                       return DropdownMenuItem<String>(
                         value: province,
                         child: Text(province),
@@ -155,7 +150,7 @@ class _PredictionPageState extends State<PredictionPage> {
                     // Updates the state when the user selects a new option
                     onChanged: (String? newValue) {
                       setState(() {
-                        _selectedProvince = newValue;
+                        _selectedPoverty = newValue;
                       });
                     },
                   ),
@@ -164,7 +159,7 @@ class _PredictionPageState extends State<PredictionPage> {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: DropdownButtonFormField<String>(
-                    value: _selectedProvince,
+                    value: _selectedQuintile,
                     // Styles the outline to match your TextField
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(
@@ -172,7 +167,7 @@ class _PredictionPageState extends State<PredictionPage> {
                       ),
                     ),
                     // Builds the list of items from the array
-                    items: _provinces.map((String province) {
+                    items: quintileOptions.values.map((String province) {
                       return DropdownMenuItem<String>(
                         value: province,
                         child: Text(province),
@@ -181,7 +176,7 @@ class _PredictionPageState extends State<PredictionPage> {
                     // Updates the state when the user selects a new option
                     onChanged: (String? newValue) {
                       setState(() {
-                        _selectedProvince = newValue;
+                        _selectedQuintile = newValue;
                       });
                     },
                   ),
