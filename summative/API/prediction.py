@@ -1,15 +1,30 @@
+import io
 from pathlib import Path
 from typing import Literal
 
 import joblib
 import pandas as pd
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+from sklearn.linear_model import LinearRegression
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 MODEL_PATH = Path(__file__).parent / "best_model.pkl"
+
+REQUIRED_COLUMNS = ["s1q3y", "s1q1", "ur", "province", "poverty", "s4aq7", "quintile", "monthly_income"]
+
+VALID_VALUES = {
+    "s1q1": {"Male", "Female"},
+    "ur": {"Urban", "Rural"},
+    "province": {"City of Kigali", "Eastern", "Northern", "Southern", "Western"},
+    "poverty": {"Non Poor", "Moderately poor", "Severaly Poor"},
+    "s4aq7": {"Yes", "No"},
+    "quintile": {"Poor", "Poor/mid", "Mid", "Mid/upper", "Upper"},
+}
 
 model = joblib.load(MODEL_PATH)
 
@@ -56,7 +71,7 @@ class YouthProfile(BaseModel):
 
     model_config["json_schema_extra"] = {
         "example": {
-            "age": 30,
+            "age": 25,
             "sex": "Female",
             "area": "Urban",
             "province": "City of Kigali",
@@ -96,3 +111,45 @@ def predict(profile: YouthProfile):
     prediction = float(model.predict(X)[0])
 
     return {"predicted_monthly_income_rwf": round(max(prediction, 0.0), 2)}
+
+@app.post("/retrain")
+async def retrain(file: UploadFile = File(...)):
+    global model
+
+    if not file.filename or not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Please upload a .csv file.")
+
+    try:
+        df = pd.read_csv(io.BytesIO(await file.read()))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Could not read the file as CSV.")
+
+    missing = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+    if missing:
+        raise HTTPException(status_code=400, detail=f"Missing columns: {missing}")
+
+    df = df[REQUIRED_COLUMNS].copy()
+    df["s1q3y"] = pd.to_numeric(df["s1q3y"], errors="coerce")
+    df["monthly_income"] = pd.to_numeric(df["monthly_income"], errors="coerce")
+    df = df.dropna()
+    df = df[df["s1q3y"].between(16, 30)]
+    for col, allowed in VALID_VALUES.items():
+        df = df[df[col].isin(allowed)]
+
+    if len(df) < 50:
+        raise HTTPException(status_code=400, detail=f"Only {len(df)} valid rows; need at least 50.")
+
+    X = encode(df.drop(columns=["monthly_income"]))
+    y = df["monthly_income"]
+
+    new_model = Pipeline([("scaler", StandardScaler()), ("model", LinearRegression())])
+    new_model.fit(X, y)
+
+    joblib.dump(new_model, MODEL_PATH)
+    model = new_model
+
+    return {
+        "status": "Model retrained successfully",
+        "rows_used": len(df),
+        "train_r2": round(new_model.score(X, y), 4),
+    }
