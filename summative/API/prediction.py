@@ -6,6 +6,7 @@ import pandas as pd
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 MODEL_PATH = Path(__file__).parent / "best_model.pkl"
@@ -17,6 +18,18 @@ app = FastAPI(
     description="Predicts the monthly income (RWF) of employed youth aged 16-30 "
                 "using NISR EICV VUP microdata.",
     version="1.0.0",
+)
+
+ALLOWED_ORIGINS = [
+    "https://rwanda-youth-wage-api.onrender.com",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "Accept"],
 )
 
 @app.exception_handler(RequestValidationError)
