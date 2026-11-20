@@ -1,4 +1,11 @@
+from pathlib import Path
+
+import joblib
 from fastapi import FastAPI
+
+MODEL_PATH = Path(__file__).parent / "best_model.pkl"
+
+model = joblib.load(MODEL_PATH)
 
 app = FastAPI(
     title="Rwanda Youth Wage Predictor",
@@ -7,6 +14,10 @@ app = FastAPI(
     version="1.0.0",
 )
 
-@app.get('/')
+@app.get("/")
 def home():
-    return {'message": "API is running. Go to /docs to test it.'}
+    return {
+        "message": "API is running. Go to /docs to test it.",
+        "model": type(model.named_steps["model"]).__name__,
+        "n_features": len(model.feature_names_in_),
+    }
