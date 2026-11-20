@@ -107,10 +107,10 @@ class _PredictionPageState extends State<PredictionPage> {
                       ),
                     ),
                     // Builds the list of items from the array
-                    items: provinces.values.map((String province) {
+                    items: provinces.entries.map((entry) {
                       return DropdownMenuItem<String>(
-                        value: province,
-                        child: Text(province),
+                        value: entry.key,         
+                        child: Text(entry.value), 
                       );
                     }).toList(),
                     // Updates the state when the user selects a new option
@@ -141,13 +141,12 @@ class _PredictionPageState extends State<PredictionPage> {
                       ),
                     ),
                     // Builds the list of items from the array
-                    items: povertyOptions.values.map((String province) {
+                    items: povertyOptions.entries.map((entry) {
                       return DropdownMenuItem<String>(
-                        value: province,
-                        child: Text(province),
+                        value: entry.key,         
+                        child: Text(entry.value), 
                       );
                     }).toList(),
-                    // Updates the state when the user selects a new option
                     onChanged: (String? newValue) {
                       setState(() {
                         _selectedPoverty = newValue;
@@ -160,20 +159,17 @@ class _PredictionPageState extends State<PredictionPage> {
                   padding: const EdgeInsets.all(8.0),
                   child: DropdownButtonFormField<String>(
                     value: _selectedQuintile,
-                    // Styles the outline to match your TextField
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(10)),
                       ),
                     ),
-                    // Builds the list of items from the array
-                    items: quintileOptions.values.map((String province) {
+                    items: quintileOptions.entries.map((entry) {
                       return DropdownMenuItem<String>(
-                        value: province,
-                        child: Text(province),
+                        value: entry.key,
+                        child: Text(entry.value), 
                       );
                     }).toList(),
-                    // Updates the state when the user selects a new option
                     onChanged: (String? newValue) {
                       setState(() {
                         _selectedQuintile = newValue;
