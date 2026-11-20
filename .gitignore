@@ -1,2 +1,3 @@
 project_brief.md
 .venv
+__pycache__/
