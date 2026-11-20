@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/constants/form_options.dart';
+import 'package:flutter_app/services/api_service.dart';
 
 class PredictionPage extends StatefulWidget {
   const PredictionPage({super.key});
@@ -17,6 +18,57 @@ class _PredictionPageState extends State<PredictionPage> {
   String? _selectedPoverty = 'Non Poor';
   String? _selectedQuintile = 'Mid';
 
+  bool _isLoading = false;
+  double? _prediction;
+  String? _errorMessage;
+
+  String get _sex => _sexSelection[0] ? 'Female' : 'Male';
+  String get _area => _areaSelection[0] ? 'Urban' : 'Rural';
+
+    final TextEditingController _ageController = TextEditingController();
+
+  @override
+  void dispose() {
+    _ageController.dispose();
+    super.dispose();
+  }
+
+    Future<void> _predict() async {
+    FocusScope.of(context).unfocus();
+
+    final age = int.tryParse(_ageController.text.trim());
+    if (age == null) {
+      setState(() {
+        _prediction = null;
+        _errorMessage = 'Please enter an age.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _prediction = null;
+      _errorMessage = null;
+    });
+
+    try {
+      final result = await ApiService.predict(
+        age: age,
+        sex: _sex,
+        area: _area,
+        province: _selectedProvince!,
+        povertyStatus: _selectedPoverty!,
+        attendedSchool: _attendedSchool,
+        quintile: _selectedQuintile!,
+      );
+      setState(() => _prediction = result);
+    } on PredictionException catch (e) {
+      setState(() => _errorMessage = e.message);
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -181,9 +233,22 @@ class _PredictionPageState extends State<PredictionPage> {
             ),
           ),
           ElevatedButton(
-            onPressed: null, 
-            child: Text('Predict')
-          )
+            onPressed: _isLoading ? null : _predict,
+            child: _isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Predict'),
+          ),
+          if (_prediction != null)
+            Text('Estimated monthly income: ${_prediction!.toStringAsFixed(0)} RWF'),
+          if (_errorMessage != null)
+            Text(
+              _errorMessage!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
         ],        
       ), 
     );
