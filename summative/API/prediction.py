@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Literal
 
 import joblib
+import pandas as pd
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
@@ -29,7 +30,7 @@ class YouthProfile(BaseModel):
 
     model_config["json_schema_extra"] = {
         "example": {
-            "age": 25,
+            "age": 30,
             "sex": "Female",
             "area": "Urban",
             "province": "City of Kigali",
@@ -39,6 +40,12 @@ class YouthProfile(BaseModel):
         }
     }
 
+def encode(raw: pd.DataFrame) -> pd.DataFrame:
+    raw = raw.copy()
+    raw["s1q3y"] = raw["s1q3y"].astype(float)
+    X = pd.get_dummies(raw, drop_first=False)
+    return X.reindex(columns=model.feature_names_in_, fill_value=0).astype(float)
+
 @app.get("/")
 def home():
     return {
@@ -46,3 +53,20 @@ def home():
         "model": type(model.named_steps["model"]).__name__,
         "n_features": len(model.feature_names_in_),
     }
+
+@app.post('/predict')
+def predict(profile: YouthProfile):
+    row = pd.DataFrame([{
+        "s1q3y": profile.age,
+        "s1q1": profile.sex,
+        "ur": profile.area,
+        "province": profile.province,
+        "poverty": profile.poverty_status,
+        "s4aq7": "Yes" if profile.attended_school_last_12m else "No",
+        "quintile": profile.consumption_quintile,
+    }])
+
+    X = encode(row)
+    prediction = float(model.predict(X)[0])
+
+    return {"predicted_monthly_income_rwf": round(max(prediction, 0.0), 2)}
