@@ -38,7 +38,7 @@ And Youth employment programmes will be using to determine which place needs the
 > The first request can take up to a minute while it wakes up.
 
 ## Video Demo
-**YouTube:** [Watch the demo](PASTE-YOUR-YOUTUBE-LINK-HERE)
+**YouTube:** [Watch the demo](https://www.youtube.com/watch?v=c5avK1R5xYU)
 
 ## Running the Mobile App
 Requirements: [Flutter SDK](https://docs.flutter.dev/get-started/install) and an
