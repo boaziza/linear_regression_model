@@ -16,7 +16,7 @@ and support youth employment decisions.
 - **Target:** `monthly_income` (RWF), built from the reported wage (`s6bq9a`)
   converted to a monthly amount using its pay period (`s6bq9b`: hour, day,
   week, fortnight, month, quarter, year)
-- **Features (7):**
+- **Features (8):**
 
 | Column | Meaning | Type |
 |---|---|---|
@@ -27,6 +27,7 @@ and support youth employment decisions.
 | `poverty` | Welfare category | Non poor / Moderately poor / Severely poor |
 | `s4aq7` | Attended school in the last 12 months | Yes / No |
 | `quintile` | Consumption quintile | Poor → Upper |
+| `s4aq2` | Highest school level attended | Primary / Vocational / Lower secondary / Upper secondary / Tertiary |
 
 ## API
 The trained model is served by a FastAPI service hosted on Render.
@@ -54,12 +55,13 @@ Request body:
   "province": "City of Kigali",
   "poverty_status": "Non Poor",
   "attended_school_last_12m": false,
-  "consumption_quintile": "Upper"
+  "consumption_quintile": "Upper",
+  "education_level": "Upper secondary"
 }
 ```
 Response (`200`):
 ```json
-{ "predicted_monthly_income_rwf": 71308.5 }
+{ "predicted_monthly_income_rwf": 83334.15 }
 ```
 
 ### Validation
@@ -72,7 +74,7 @@ returns **`400 Bad Request`**:
 
 ### Retraining: `POST /retrain`
 Upload a CSV (multipart form, field name `file`) with the columns
-`s1q3y, s1q1, ur, province, poverty, s4aq7, quintile, monthly_income`.
+`s1q3y, s1q1, ur, province, poverty, s4aq7, quintile, s4aq2, monthly_income`.
 `summative/API/retrain_sample.csv` is a ready-made example.
 
 ## Model
@@ -82,21 +84,21 @@ All work is in `summative/linear_regression/multivariate.ipynb`.
 - Filtered the survey to people aged **16–30** with a reported wage.
 - Converted every wage to a **monthly amount** using its pay period.
 - One-hot encoded the categorical features (`pd.get_dummies`, `drop_first=True`),
-  giving **14 model features**.
+  giving **18 model features**.
 - Split **80% train / 20% test** (`random_state=42`) and standardised the
   features with `StandardScaler`, fitted on the training set only.
 
 ### Models compared (Test MSE, lower is better)
 | Model | Test MSE |
 |---|---|
-| **Linear Regression** | **1,489,493,987.70** |
-| SGD Regressor | 1,537,180,358.23 |
-| Random Forest | 2,333,034,006.17 |
-| Decision Tree | 2,353,703,424.19 |
+| **Linear Regression** | **1,254,856,003.30** |
+| SGD Regressor | 1,343,821,171.20 |
+| Random Forest | 2,065,954,014.53 |
+| Decision Tree | 10,058,771,211.89 |
 
 **Linear Regression** had the lowest test error, so it was saved as the final
 model (`StandardScaler` + `LinearRegression` in one `Pipeline`) to
-`summative/API/best_model.pkl`. Its test RMSE is about **38,600 RWF**.
+`summative/API/best_model.pkl`. Its test RMSE is about **35,400 RWF**.
 
 ### Limitations
 Youth incomes are heavily skewed: most earners are clustered at low incomes,
@@ -124,7 +126,8 @@ flutter run
 ### Using the app
 1. Enter an **age (16–30)**.
 2. Choose **sex**, **area**, **province**, **poverty status**, **consumption
-   quintile**, and whether the person **attended school in the last 12 months**.
+   quintile**, **highest school level**, and whether the person **attended
+   school in the last 12 months**.
 3. Tap **Predict**. The estimated monthly income appears in RWF.
 4. Invalid input (for example age 35) shows the API's error message instead.
 

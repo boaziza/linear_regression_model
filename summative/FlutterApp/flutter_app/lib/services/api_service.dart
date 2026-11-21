@@ -14,6 +14,7 @@ class ApiService {
     required String povertyStatus,
     required bool attendedSchool,
     required String quintile,
+    required String education,
   }) async {
     final http.Response response;
     try {
@@ -29,6 +30,7 @@ class ApiService {
               'poverty_status': povertyStatus,
               'attended_school_last_12m': attendedSchool,
               'consumption_quintile': quintile,
+              'education_level': education,
             }),
           )
           .timeout(const Duration(seconds: 60));
