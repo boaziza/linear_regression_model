@@ -1,3 +1,18 @@
+const Map<String, String> sexOptions = {
+  'Female': 'Female',
+  'Male': 'Male',
+};
+
+const Map<String, String> areaOptions = {
+  'Urban': 'Urban',
+  'Rural': 'Rural',
+};
+
+const Map<String, String> schoolOptions = {
+  'Yes': 'Yes',
+  'No': 'No',
+};
+
 const Map<String, String> provinces = {
   'City of Kigali': 'City of Kigali',
   'Northern': 'Northern Province',

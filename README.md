@@ -7,6 +7,8 @@ predicts the monthly income of employed young people (ages 16–30) from their
 demographics, location and household welfare, to show where wage gaps exist
 and support youth employment decisions.
 
+And Youth employment programmes will be using to determine which place needs the most help.
+
 ## Dataset
 - **Source:** National Institute of Statistics of Rwanda (NISR) — EICV Vision
   Umurenge Programme (VUP) microdata
@@ -29,21 +31,54 @@ and support youth employment decisions.
 | `quintile` | Consumption quintile | Poor → Upper |
 | `s4aq2` | Highest school level attended | Primary / Vocational / Lower secondary / Upper secondary / Tertiary |
 
-## API
-The trained model is served by a FastAPI service hosted on Render.
-
-- **Base URL:** https://rwanda-youth-wage-api.onrender.com
-- **Swagger UI (test it here):** https://rwanda-youth-wage-api.onrender.com/docs
+## API (Swagger UI)
+**Public Swagger UI — test the API here:** https://rwanda-youth-wage-api.onrender.com/docs
 
 > The free Render instance sleeps after ~15 minutes of inactivity.
 > The first request can take up to a minute while it wakes up.
 
-### Endpoints
+## Video Demo
+**YouTube:** [Watch the demo](PASTE-YOUR-YOUTUBE-LINK-HERE)
+
+## Running the Mobile App
+Requirements: [Flutter SDK](https://docs.flutter.dev/get-started/install) and an
+Android emulator or Android phone with USB debugging enabled.
+
+1. Clone the repository and open the app folder:
+   ```bash
+   git clone https://github.com/boaziza/linear_regression_model.git
+   cd linear_regression_model/summative/FlutterApp/flutter_app
+   ```
+2. Install the packages:
+   ```bash
+   flutter pub get
+   ```
+3. Start an Android emulator (or connect a phone), then run the app:
+   ```bash
+   flutter run
+   ```
+4. In the app, enter an **age (16–30)**, choose **sex**, **area**, **province**,
+   **poverty status**, **consumption quintile**, **highest school level**, and
+   whether the person **attended school in the last 12 months**.
+5. Tap **Predict**. The estimated monthly income appears in RWF. Invalid input
+   (for example age 35) shows the API's error message instead.
+
+The app calls the public Render API — the URL is set once in
+`summative/FlutterApp/flutter_app/lib/services/api_service.dart` (`baseUrl`).
+Run it on Android, not Chrome: the API only allows its own domain through CORS,
+so a browser build of the app is blocked by design.
+
+---
+
+## API Details
+Base URL: https://rwanda-youth-wage-api.onrender.com
+
 | Method | Path | Purpose |
 |---|---|---|
 | `GET` | `/` | Health check — confirms the model is loaded |
 | `POST` | `/predict` | Returns the predicted monthly income (RWF) for one person |
 | `POST` | `/retrain` | Uploads a CSV of new data, retrains the model and replaces it in memory |
+| `GET` | `/docs` | Swagger UI |
 
 ### Example: `POST /predict`
 Request body:
@@ -75,7 +110,11 @@ returns **`400 Bad Request`**:
 ### Retraining: `POST /retrain`
 Upload a CSV (multipart form, field name `file`) with the columns
 `s1q3y, s1q1, ur, province, poverty, s4aq7, quintile, s4aq2, monthly_income`.
-`summative/API/retrain_sample.csv` is a ready-made example.
+The new rows are cleaned, combined with the original training data
+(`summative/API/retrain_sample.csv`) and the Linear Regression pipeline is
+refitted. `/predict` uses the updated model straight away, without a redeploy.
+On Render's free plan the retrained model is lost when the service restarts,
+and the API loads `best_model.pkl` from the repository again.
 
 ## Model
 All work is in `summative/linear_regression/multivariate.ipynb`.
@@ -106,65 +145,33 @@ with a few very high outliers. The tree-based models overfit those outliers,
 while the simpler linear model generalised better. Predictions should be read
 as an average trend for similar profiles, not an exact wage for one person.
 
-## Mobile App (Flutter)
-A one-page Flutter app that sends a person's details to the live API and
-shows the predicted monthly income.
-
-The app calls the public Render API — the URL is set once in
-`summative/FlutterApp/flutter_app/lib/services/api_service.dart` (`baseUrl`).
-
-### Run it
-Requirements: [Flutter SDK](https://docs.flutter.dev/get-started/install) and an
-Android emulator or Android phone with USB debugging enabled.
-
-```bash
-cd summative/FlutterApp/flutter_app
-flutter pub get
-flutter run
-```
-
-### Using the app
-1. Enter an **age (16–30)**.
-2. Choose **sex**, **area**, **province**, **poverty status**, **consumption
-   quintile**, **highest school level**, and whether the person **attended
-   school in the last 12 months**.
-3. Tap **Predict**. The estimated monthly income appears in RWF.
-4. Invalid input (for example age 35) shows the API's error message instead.
-
-> Run the app on Android, not Chrome: the API only allows its own domain
-> through CORS, so a browser build of the app is blocked by design.
-
 ## Run the API locally (optional)
 ```bash
-cd summative
+cd summative/API
 uv sync
-cd API
 uv run uvicorn prediction:app --reload
 ```
 Then open http://127.0.0.1:8000/docs.
-
-## Video Demo
-**YouTube:** [Watch the demo](PASTE-YOUR-YOUTUBE-LINK-HERE)
-
-The video shows the notebook (data preparation, model comparison), the API
-being tested in Swagger (`/predict`, a `400` validation error, and `/retrain`),
-and the Flutter app making a prediction.
 
 ## Repository Structure
 ```
 linear_regression_model/
 ├── README.md
 └── summative/
-    ├── pyproject.toml / uv.lock        # Python dependencies (uv)
+    ├── pyproject.toml
+    ├── uv.lock
     ├── linear_regression/
     │   ├── multivariate.ipynb          # Data cleaning, EDA, training, model comparison
     │   ├── nisr_vup_demographics.csv   # Survey data converted from Stata
     │   └── Microdata/                  # Original NISR .dta file
     ├── API/
-    │   ├── prediction.py               # FastAPI app: /predict, /retrain
+    │   ├── prediction.py               # FastAPI app: /predict, /retrain, CORS
+    │   ├── retrain.py                  # Cleans new rows, combines with original data, refits
+    │   ├── pyproject.toml              # API dependencies (uv)
+    │   ├── uv.lock
+    │   ├── requirements.txt            # Exported from uv, installed on Render
     │   ├── best_model.pkl              # Saved Pipeline (StandardScaler + LinearRegression)
-    │   ├── retrain_sample.csv          # Example CSV for /retrain
-    │   └── requirements.txt            # Dependencies installed on Render
+    │   └── retrain_sample.csv          # Original cleaned training data / example upload
     └── FlutterApp/flutter_app/
         └── lib/
             ├── main.dart

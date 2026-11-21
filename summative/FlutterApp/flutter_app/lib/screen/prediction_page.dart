@@ -11,21 +11,32 @@ class PredictionPage extends StatefulWidget {
 }
 
 class _PredictionPageState extends State<PredictionPage> {
-  List<bool> _sexSelection = [true, false];
-  List<bool> _areaSelection = [true, false];
-  bool _attendedSchool = false;
-
-  String? _selectedProvince = 'City of Kigali';
-  String? _selectedPoverty = 'Non Poor';
-  String? _selectedQuintile = 'Mid';
-  String? _selectedEducation = 'Primary';
+  final TextEditingController _ageController = TextEditingController();
+  final TextEditingController _sexController = TextEditingController();
+  final TextEditingController _schoolController = TextEditingController();
+  final TextEditingController _educationController = TextEditingController();
+  final TextEditingController _areaController = TextEditingController();
+  final TextEditingController _provinceController = TextEditingController();
+  final TextEditingController _povertyController = TextEditingController();
+  final TextEditingController _quintileController = TextEditingController();
 
   bool _isLoading = false;
   double? _prediction;
   String? _errorMessage;
 
-  String get _sex => _sexSelection[0] ? 'Female' : 'Male';
-  String get _area => _areaSelection[0] ? 'Urban' : 'Rural';
+  String _toApiValue(TextEditingController controller, Map<String, String> options) {
+    final typed = controller.text.trim();
+    for (final entry in options.entries) {
+      if (entry.key.toLowerCase() == typed.toLowerCase() ||
+          entry.value.toLowerCase() == typed.toLowerCase()) {
+        return entry.key;
+      }
+    }
+    return typed;
+  }
+
+  // Hint under each field listing the values it accepts
+  String _allowed(Map<String, String> options) => options.values.join(', ');
 
   // Design: which status the result card shows
   bool get _ageHasError => _errorMessage?.startsWith('age') ?? false;
@@ -47,8 +58,9 @@ class _PredictionPageState extends State<PredictionPage> {
   static const _labelStyle = TextStyle(
       fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF111111));
 
-  // Design: one look for the three dropdowns
-  static const _dropdownDecoration = InputDecoration(
+  // Design: one look for the text fields
+  static const _fieldDecoration = InputDecoration(
+    helperMaxLines: 2,
     contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.all(Radius.circular(8)),
@@ -67,27 +79,81 @@ class _PredictionPageState extends State<PredictionPage> {
     borderRadius: BorderRadius.circular(16),
   );
 
-  final TextEditingController _ageController = TextEditingController();
-
   @override
   void dispose() {
     _ageController.dispose();
+    _sexController.dispose();
+    _schoolController.dispose();
+    _educationController.dispose();
+    _areaController.dispose();
+    _provinceController.dispose();
+    _povertyController.dispose();
+    _quintileController.dispose();
     super.dispose();
+  }
+
+  // Label + text field with a hint, used for every input
+  Widget _textInput(String label, TextEditingController controller,
+      String hint, String helper,
+      {TextInputType keyboard = TextInputType.text, String? errorText}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: _labelStyle),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboard,
+            style: const TextStyle(fontSize: 16, color: Color(0xFF111111)),
+            decoration: _fieldDecoration.copyWith(
+              hintText: hint,
+              helperText: helper,
+              errorText: errorText,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Future<void> _predict() async {
     FocusScope.of(context).unfocus();
 
+    // Missing values
+    final fields = {
+      'Age': _ageController,
+      'Sex': _sexController,
+      'Attended school': _schoolController,
+      'Highest school level': _educationController,
+      'Area': _areaController,
+      'Province': _provinceController,
+      'Poverty status': _povertyController,
+      'Consumption quintile': _quintileController,
+    };
+    final missing = fields.entries
+        .where((field) => field.value.text.trim().isEmpty)
+        .map((field) => field.key)
+        .toList();
+    if (missing.isNotEmpty) {
+      setState(() {
+        _prediction = null;
+        _errorMessage = 'Please fill in: ${missing.join(', ')}.';
+      });
+      return;
+    }
+
+    // Wrong type for age
     final age = int.tryParse(_ageController.text.trim());
     if (age == null) {
       setState(() {
         _prediction = null;
-        _errorMessage = _ageController.text.trim().isEmpty
-            ? 'Please enter an age.'
-            : 'Age must be a whole number.';
+        _errorMessage = 'Age must be a whole number.';
       });
       return;
     }
+
+    final school = _toApiValue(_schoolController, schoolOptions);
 
     setState(() {
       _isLoading = true;
@@ -98,13 +164,14 @@ class _PredictionPageState extends State<PredictionPage> {
     try {
       final result = await ApiService.predict(
         age: age,
-        sex: _sex,
-        area: _area,
-        province: _selectedProvince!,
-        povertyStatus: _selectedPoverty!,
-        attendedSchool: _attendedSchool,
-        quintile: _selectedQuintile!,
-        education: _selectedEducation!,
+        sex: _toApiValue(_sexController, sexOptions),
+        area: _toApiValue(_areaController, areaOptions),
+        province: _toApiValue(_provinceController, provinces),
+        povertyStatus: _toApiValue(_povertyController, povertyOptions),
+        attendedSchool:
+            school == 'Yes' ? true : (school == 'No' ? false : school),
+        quintile: _toApiValue(_quintileController, quintileOptions),
+        education: _toApiValue(_educationController, educationOptions),
       );
       setState(() => _prediction = result);
     } on PredictionException catch (e) {
@@ -174,120 +241,16 @@ class _PredictionPageState extends State<PredictionPage> {
                     children: [
                       const Text('PROFILE', style: _sectionStyle),
                       const SizedBox(height: 12),
-                      const Text('Age', style: _labelStyle),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: TextField(
-                          controller: _ageController,
-                          keyboardType: TextInputType.number,
-                          style: const TextStyle(
-                              fontSize: 16, color: Color(0xFF111111)),
-                          decoration: InputDecoration(
-                            hintText: 'e.g. 25',
-                            helperText: '16–30 years',
-                            errorText: _ageHasError ? 'Must be 16–30' : null,
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 12),
-                            enabledBorder: const OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8)),
-                              borderSide: BorderSide(color: Color(0xFFD9D9DE)),
-                            ),
-                            focusedBorder: const OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8)),
-                              borderSide:
-                                  BorderSide(color: Color(0xFF111111), width: 2),
-                            ),
-                            errorBorder: const OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8)),
-                              borderSide:
-                                  BorderSide(color: Color(0xFFB42318), width: 2),
-                            ),
-                            focusedErrorBorder: const OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8)),
-                              borderSide:
-                                  BorderSide(color: Color(0xFFB42318), width: 2),
-                            ),
-                          ),
-                          onSubmitted: null,
-                        ),
-                      ),
-                      const Text('Sex', style: _labelStyle),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF2F2F4),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: ToggleButtons(
-                            isSelected: _sexSelection,
-                            onPressed: (int index) {
-                              setState(() {
-                                _sexSelection = [index == 0, index == 1];
-                              });
-                            },
-                            renderBorder: false,
-                            borderRadius: BorderRadius.circular(6),
-                            fillColor: Colors.white,
-                            selectedColor: const Color(0xFF111111),
-                            color: const Color(0xFF6E6E73),
-                            textStyle: const TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w600),
-                            constraints:
-                                const BoxConstraints(minHeight: 38, minWidth: 90),
-                            children: const [Text('Female'), Text('Male')],
-                          ),
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          const Expanded(
-                            child: Text('Attended school in the last 12 months',
-                                style: _labelStyle),
-                          ),
-                          Switch(
-                            value: _attendedSchool,
-                            onChanged: (bool value) {
-                              setState(() {
-                                _attendedSchool = value;
-                              });
-                            },
-                            activeTrackColor: const Color(0xFF111111),
-                            activeThumbColor: Colors.white,
-                            inactiveTrackColor: const Color(0xFFD9D9DE),
-                            inactiveThumbColor: Colors.white,
-                            trackOutlineColor:
-                                const WidgetStatePropertyAll(Colors.transparent),
-                          ),
-                        ],
-                      ),
-                      const Text('Highest school level attended',
-                          style: _labelStyle),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: DropdownButtonFormField<String>(
-                          initialValue: _selectedEducation,
-                          decoration: _dropdownDecoration,
-                          dropdownColor: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          icon: const Icon(Icons.keyboard_arrow_down,
-                              color: Color(0xFF6E6E73)),
-                          style: const TextStyle(
-                              fontSize: 15, color: Color(0xFF111111)),
-                          items: educationOptions.entries.map((entry) {
-                            return DropdownMenuItem<String>(
-                              value: entry.key,
-                              child: Text(entry.value),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _selectedEducation = newValue;
-                            });
-                          },
-                        ),
-                      ),
+                      _textInput('Age', _ageController, 'e.g. 25', '16–30 years',
+                          keyboard: TextInputType.number,
+                          errorText: _ageHasError ? 'Must be 16–30' : null),
+                      _textInput('Sex', _sexController, 'e.g. Female',
+                          _allowed(sexOptions)),
+                      _textInput('Attended school in the last 12 months',
+                          _schoolController, 'e.g. No', _allowed(schoolOptions)),
+                      _textInput('Highest school level attended',
+                          _educationController, 'e.g. Primary',
+                          _allowed(educationOptions)),
                     ],
                   ),
                 ),
@@ -304,62 +267,10 @@ class _PredictionPageState extends State<PredictionPage> {
                     children: [
                       const Text('LOCATION', style: _sectionStyle),
                       const SizedBox(height: 12),
-                      const Text('Area', style: _labelStyle),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF2F2F4),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: ToggleButtons(
-                            isSelected: _areaSelection,
-                            onPressed: (int index) {
-                              setState(() {
-                                _areaSelection = [index == 0, index == 1];
-                              });
-                            },
-                            renderBorder: false,
-                            borderRadius: BorderRadius.circular(6),
-                            fillColor: Colors.white,
-                            selectedColor: const Color(0xFF111111),
-                            color: const Color(0xFF6E6E73),
-                            textStyle: const TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w600),
-                            constraints:
-                                const BoxConstraints(minHeight: 38, minWidth: 90),
-                            children: const [Text('Urban'), Text('Rural')],
-                          ),
-                        ),
-                      ),
-                      const Text('Province', style: _labelStyle),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: DropdownButtonFormField<String>(
-                          initialValue: _selectedProvince,
-                          decoration: _dropdownDecoration,
-                          dropdownColor: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          icon: const Icon(Icons.keyboard_arrow_down,
-                              color: Color(0xFF6E6E73)),
-                          style: const TextStyle(
-                              fontSize: 15, color: Color(0xFF111111)),
-                          // Builds the list of items from the array
-                          items: provinces.entries.map((entry) {
-                            return DropdownMenuItem<String>(
-                              value: entry.key,
-                              child: Text(entry.value),
-                            );
-                          }).toList(),
-                          // Updates the state when the user selects a new option
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _selectedProvince = newValue;
-                            });
-                          },
-                        ),
-                      ),
+                      _textInput('Area', _areaController, 'e.g. Urban',
+                          _allowed(areaOptions)),
+                      _textInput('Province', _provinceController,
+                          'e.g. City of Kigali', _allowed(provinces)),
                     ],
                   ),
                 ),
@@ -376,57 +287,10 @@ class _PredictionPageState extends State<PredictionPage> {
                     children: [
                       const Text('HOUSEHOLD WELFARE', style: _sectionStyle),
                       const SizedBox(height: 12),
-                      const Text('Poverty status', style: _labelStyle),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: DropdownButtonFormField<String>(
-                          initialValue: _selectedPoverty,
-                          decoration: _dropdownDecoration,
-                          dropdownColor: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          icon: const Icon(Icons.keyboard_arrow_down,
-                              color: Color(0xFF6E6E73)),
-                          style: const TextStyle(
-                              fontSize: 15, color: Color(0xFF111111)),
-                          // Builds the list of items from the array
-                          items: povertyOptions.entries.map((entry) {
-                            return DropdownMenuItem<String>(
-                              value: entry.key,
-                              child: Text(entry.value),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _selectedPoverty = newValue;
-                            });
-                          },
-                        ),
-                      ),
-                      const Text('Consumption quintile', style: _labelStyle),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: DropdownButtonFormField<String>(
-                          initialValue: _selectedQuintile,
-                          decoration: _dropdownDecoration,
-                          dropdownColor: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          icon: const Icon(Icons.keyboard_arrow_down,
-                              color: Color(0xFF6E6E73)),
-                          style: const TextStyle(
-                              fontSize: 15, color: Color(0xFF111111)),
-                          items: quintileOptions.entries.map((entry) {
-                            return DropdownMenuItem<String>(
-                              value: entry.key,
-                              child: Text(entry.value),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _selectedQuintile = newValue;
-                            });
-                          },
-                        ),
-                      ),
+                      _textInput('Poverty status', _povertyController,
+                          'e.g. Non poor', _allowed(povertyOptions)),
+                      _textInput('Consumption quintile', _quintileController,
+                          'e.g. Mid', _allowed(quintileOptions)),
                     ],
                   ),
                 ),
@@ -473,7 +337,7 @@ class _PredictionPageState extends State<PredictionPage> {
                             color: const Color(0xFFF2F2F4),
                             borderRadius: BorderRadius.circular(999),
                           ),
-                          child: const Text('RWF',
+                          child: const Text('Status',
                               style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,

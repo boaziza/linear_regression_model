@@ -12,7 +12,7 @@ class ApiService {
     required String area,
     required String province,
     required String povertyStatus,
-    required bool attendedSchool,
+    required Object attendedSchool,
     required String quintile,
     required String education,
   }) async {
