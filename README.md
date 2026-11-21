@@ -103,3 +103,69 @@ Youth incomes are heavily skewed: most earners are clustered at low incomes,
 with a few very high outliers. The tree-based models overfit those outliers,
 while the simpler linear model generalised better. Predictions should be read
 as an average trend for similar profiles, not an exact wage for one person.
+
+## Mobile App (Flutter)
+A one-page Flutter app that sends a person's details to the live API and
+shows the predicted monthly income.
+
+The app calls the public Render API — the URL is set once in
+`summative/FlutterApp/flutter_app/lib/services/api_service.dart` (`baseUrl`).
+
+### Run it
+Requirements: [Flutter SDK](https://docs.flutter.dev/get-started/install) and an
+Android emulator or Android phone with USB debugging enabled.
+
+```bash
+cd summative/FlutterApp/flutter_app
+flutter pub get
+flutter run
+```
+
+### Using the app
+1. Enter an **age (16–30)**.
+2. Choose **sex**, **area**, **province**, **poverty status**, **consumption
+   quintile**, and whether the person **attended school in the last 12 months**.
+3. Tap **Predict**. The estimated monthly income appears in RWF.
+4. Invalid input (for example age 35) shows the API's error message instead.
+
+> Run the app on Android, not Chrome: the API only allows its own domain
+> through CORS, so a browser build of the app is blocked by design.
+
+## Run the API locally (optional)
+```bash
+cd summative
+uv sync
+cd API
+uv run uvicorn prediction:app --reload
+```
+Then open http://127.0.0.1:8000/docs.
+
+## Video Demo
+**YouTube:** [Watch the demo](PASTE-YOUR-YOUTUBE-LINK-HERE)
+
+The video shows the notebook (data preparation, model comparison), the API
+being tested in Swagger (`/predict`, a `400` validation error, and `/retrain`),
+and the Flutter app making a prediction.
+
+## Repository Structure
+```
+linear_regression_model/
+├── README.md
+└── summative/
+    ├── pyproject.toml / uv.lock        # Python dependencies (uv)
+    ├── linear_regression/
+    │   ├── multivariate.ipynb          # Data cleaning, EDA, training, model comparison
+    │   ├── nisr_vup_demographics.csv   # Survey data converted from Stata
+    │   └── Microdata/                  # Original NISR .dta file
+    ├── API/
+    │   ├── prediction.py               # FastAPI app: /predict, /retrain
+    │   ├── best_model.pkl              # Saved Pipeline (StandardScaler + LinearRegression)
+    │   ├── retrain_sample.csv          # Example CSV for /retrain
+    │   └── requirements.txt            # Dependencies installed on Render
+    └── FlutterApp/flutter_app/
+        └── lib/
+            ├── main.dart
+            ├── screen/prediction_page.dart
+            ├── services/api_service.dart
+            └── constants/form_options.dart
+```
