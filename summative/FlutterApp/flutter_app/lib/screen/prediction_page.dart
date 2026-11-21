@@ -81,7 +81,9 @@ class _PredictionPageState extends State<PredictionPage> {
     if (age == null) {
       setState(() {
         _prediction = null;
-        _errorMessage = 'Please enter an age.';
+        _errorMessage = _ageController.text.trim().isEmpty
+            ? 'Please enter an age.'
+            : 'Age must be a whole number.';
       });
       return;
     }

@@ -1,17 +1,12 @@
-# flutter_app
+# Youth Wage Predictor — Flutter app
 
-A new Flutter project.
+One-page app that sends a young person's details to the live prediction API
+(`https://rwanda-youth-wage-api.onrender.com`) and shows the estimated monthly
+income in RWF.
 
-## Getting Started
+```bash
+flutter pub get
+flutter run
+```
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+See the main [README](../../../README.md) for the full project.

@@ -6,15 +6,6 @@ class ApiService {
 
   static const String baseUrl = 'https://rwanda-youth-wage-api.onrender.com';
 
-  static Future<String> ping() async{
-    final response = await http
-      .get(Uri.parse('$baseUrl/'))
-        .timeout(const Duration(seconds: 60));
-
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    return data['message'] as String;
-  }
-
   static Future<double> predict({
     required int age,
     required String sex,
