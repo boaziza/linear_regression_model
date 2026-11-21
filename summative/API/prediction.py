@@ -15,7 +15,7 @@ from sklearn.preprocessing import StandardScaler
 
 MODEL_PATH = Path(__file__).parent / "best_model.pkl"
 
-REQUIRED_COLUMNS = ["s1q3y", "s1q1", "ur", "province", "poverty", "s4aq7", "quintile", "monthly_income"]
+REQUIRED_COLUMNS = ["s1q3y", "s1q1", "ur", "province", "poverty", "s4aq7", "quintile", "s4aq2", "monthly_income"]
 
 VALID_VALUES = {
     "s1q1": {"Male", "Female"},
@@ -24,6 +24,7 @@ VALID_VALUES = {
     "poverty": {"Non Poor", "Moderately poor", "Severaly Poor"},
     "s4aq7": {"Yes", "No"},
     "quintile": {"Poor", "Poor/mid", "Mid", "Mid/upper", "Upper"},
+    "s4aq2": {"Primary", "INGOBOKA /Vocational training", "Lower secondary", "Upper secondary", "Tertiary"},
 }
 
 model = joblib.load(MODEL_PATH)
@@ -68,6 +69,7 @@ class YouthProfile(BaseModel):
     poverty_status: Literal["Non Poor", "Moderately poor", "Severaly Poor"]
     attended_school_last_12m: bool
     consumption_quintile: Literal["Poor", "Poor/mid", "Mid", "Mid/upper", "Upper"]
+    education_level: Literal["Primary", "INGOBOKA /Vocational training", "Lower secondary", "Upper secondary", "Tertiary"]
 
     model_config["json_schema_extra"] = {
         "example": {
@@ -78,6 +80,7 @@ class YouthProfile(BaseModel):
             "poverty_status": "Non Poor",
             "attended_school_last_12m": False,
             "consumption_quintile": "Upper",
+            "education_level": "Upper secondary",
         }
     }
 
@@ -105,6 +108,7 @@ def predict(profile: YouthProfile):
         "poverty": profile.poverty_status,
         "s4aq7": "Yes" if profile.attended_school_last_12m else "No",
         "quintile": profile.consumption_quintile,
+        "s4aq2": profile.education_level,
     }])
 
     X = encode(row)

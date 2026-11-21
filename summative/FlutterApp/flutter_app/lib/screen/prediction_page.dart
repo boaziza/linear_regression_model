@@ -18,6 +18,7 @@ class _PredictionPageState extends State<PredictionPage> {
   String? _selectedProvince = 'City of Kigali';
   String? _selectedPoverty = 'Non Poor';
   String? _selectedQuintile = 'Mid';
+  String? _selectedEducation = 'Primary';
 
   bool _isLoading = false;
   double? _prediction;
@@ -103,6 +104,7 @@ class _PredictionPageState extends State<PredictionPage> {
         povertyStatus: _selectedPoverty!,
         attendedSchool: _attendedSchool,
         quintile: _selectedQuintile!,
+        education: _selectedEducation!,
       );
       setState(() => _prediction = result);
     } on PredictionException catch (e) {
@@ -259,6 +261,32 @@ class _PredictionPageState extends State<PredictionPage> {
                                 const WidgetStatePropertyAll(Colors.transparent),
                           ),
                         ],
+                      ),
+                      const Text('Highest school level attended',
+                          style: _labelStyle),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _selectedEducation,
+                          decoration: _dropdownDecoration,
+                          dropdownColor: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          icon: const Icon(Icons.keyboard_arrow_down,
+                              color: Color(0xFF6E6E73)),
+                          style: const TextStyle(
+                              fontSize: 15, color: Color(0xFF111111)),
+                          items: educationOptions.entries.map((entry) {
+                            return DropdownMenuItem<String>(
+                              value: entry.key,
+                              child: Text(entry.value),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _selectedEducation = newValue;
+                            });
+                          },
+                        ),
                       ),
                     ],
                   ),

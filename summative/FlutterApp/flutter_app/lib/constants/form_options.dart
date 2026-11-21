@@ -19,3 +19,11 @@ const Map<String, String> quintileOptions = {
   'Mid/upper': 'Mid / upper',
   'Upper': 'Upper (highest 20%)',
 };
+
+const Map<String, String> educationOptions = {
+  'Primary': 'Primary',
+  'INGOBOKA /Vocational training': 'Vocational training', // dataset spelling on the left
+  'Lower secondary': 'Lower secondary',
+  'Upper secondary': 'Upper secondary',
+  'Tertiary': 'Tertiary (university)',
+};
