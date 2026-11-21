@@ -57,7 +57,7 @@ Android emulator or Android phone with USB debugging enabled.
    ```bash
    flutter run
    ```
-4. In the app, enter an **age (16–30)**, choose **sex**, **area**, **province**,
+4. In the app, enter an **age (16–30)**, then type **sex**, **area**, **province**,
    **poverty status**, **consumption quintile**, **highest school level**, and
    whether the person **attended school in the last 12 months**.
 5. Tap **Predict**. The estimated monthly income appears in RWF. Invalid input
@@ -131,7 +131,7 @@ All work is in `summative/linear_regression/multivariate.ipynb`.
 | Model | Test MSE |
 |---|---|
 | **Linear Regression** | **1,254,856,003.30** |
-| SGD Regressor | 1,343,821,171.20 |
+| SGD Regressor | 1,466,141,397.34 |
 | Random Forest | 2,065,954,014.53 |
 | Decision Tree | 10,058,771,211.89 |
 
